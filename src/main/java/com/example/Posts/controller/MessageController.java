@@ -20,7 +20,7 @@ public class MessageController {
 
     //Временный костыль вместо базы данных
     public List<Map<String, String>> messages = new ArrayList<Map<String, String>>() {{
-       add(new HashMap<String, String>() {{put("id", "1"); put("text", "message 1"); }});
+       add(new HashMap<String, String>() {{put("id", "1"); put("text", "message one 1"); }});
        add(new HashMap<String, String>() {{put("id", "2"); put("text", "message 2"); }});
        add(new HashMap<String, String>() {{put("id", "3"); put("text", "message 3"); }});
        add(new HashMap<String, String>() {{put("id", "4"); put("text", "message 4"); }});
