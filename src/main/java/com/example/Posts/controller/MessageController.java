@@ -1,12 +1,15 @@
 package com.example.Posts.controller;
 
-import com.example.Posts.exception.NotFoundException;
+import com.example.Posts.domain.Message;
+import com.example.Posts.domain.Views;
+import com.example.Posts.repository.MessageRepo;
+import com.fasterxml.jackson.annotation.JsonView;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Контроллер сообщений
@@ -16,57 +19,47 @@ import java.util.Map;
 @RequestMapping("message")
 public class MessageController {
 
-    private int counter = 5; //Костыльная версия счетчика для подставления актуального id
+    private final MessageRepo messageRepo;
 
-    //Временный костыль вместо базы данных
-    public List<Map<String, String>> messages = new ArrayList<Map<String, String>>() {{
-       add(new HashMap<String, String>() {{put("id", "1"); put("text", "message 1"); }});
-       add(new HashMap<String, String>() {{put("id", "2"); put("text", "message 2"); }});
-       add(new HashMap<String, String>() {{put("id", "3"); put("text", "message 3"); }});
-       add(new HashMap<String, String>() {{put("id", "4"); put("text", "message 4"); }});
-    }};
+    @Autowired
+    public MessageController(MessageRepo messageRepo) {
+        this.messageRepo = messageRepo;
+    }
 
     @GetMapping
-    public List<Map<String, String>> list() {
-        return messages;
+    @JsonView(Views.IdName.class)
+    public List<Message> list() {
+        return messageRepo.findAll();
     }
 
     @GetMapping("{id}")
-    public Map<String, String> getOne(@PathVariable String id) {
-        return getMessage(id);
-    }
-
-    // ctrl + alt + m  выносит выделенный фрагмент в отдельный класс
-    private Map<String, String> getMessage(@PathVariable String id) {
-        return messages.stream()
-                .filter(message -> message.get("id").equals(id))
-                .findFirst()    //Фильтруем пользователей и вытаскиваем первого с нужным id
-                .orElseThrow(NotFoundException::new); //Выбрасываем ошибку если пользователь с таким id не найден
+    public Message getOne(@PathVariable("id") Message message) { // когда в урле приходи id мы по нему ищем message
+        return message;
     }
 
     @PostMapping
-    public Map<String, String> create(@RequestBody Map<String, String> message) {
-        message.put("id", String.valueOf(counter++));
-        messages.add(message);
-        return message;
+    public Message create(@RequestBody Message message) {
+        message.setCreationDate(LocalDateTime.now());
+        return messageRepo.save(message);
     }
 
     // ctrl + alt + v
     @PutMapping("{id}")
-    public Map<String, String> update(@PathVariable String id, @RequestBody Map<String, String> message) {
-        Map<String, String> messageFromDb = getMessage(id);
-        messageFromDb.putAll(message);
-        messageFromDb.put("id", id);
+    public Message update(
+            @PathVariable("id") Message messageFromDb,  // сообщение из БД
+            @RequestBody Message message)               // сообщение от пользователя
+    {
+        BeanUtils.copyProperties(message, messageFromDb, "id"); //Метод BeanUtils.copyProperties позволяет копировать все поля в новый бин из старого, кроме id
 
-        return messageFromDb;
+        return messageRepo.save(messageFromDb);
     }
 
     @DeleteMapping("{id}")
-    public void delete(@PathVariable String id) {
-        Map<String, String> message = getMessage(id);
-        messages.remove(message);
+    public void delete(@PathVariable("id") Message message) {
+        messageRepo.delete(message);
     }
 
+    // ctrl + alt + m  выносит выделенный фрагмент в отдельный класс
     /**
      * // GET all
      * fetch('/message/').then(response => response.json().then(console.log))
